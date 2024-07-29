@@ -1,4 +1,4 @@
-# Countdown
+# Countdown Test
 
 This is a programming experiment where my goal is to learn languages by making the same countdown app in several of them. I'll start with C++, then move on to whatever other programming language I want to learn (or relearn). Maybe Python, Bash, Rust, JavaScript (HTML frontend?), I don't know. I just think it would be a good way to learn programming languages. And honestly, I've never made a TUI before, so that will probably be a good thing to learn.
 
