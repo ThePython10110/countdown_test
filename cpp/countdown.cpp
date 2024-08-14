@@ -1,9 +1,29 @@
+/*******************************************************************************
+ * countdown.cpp
+ * The main code
+ *******************************************************************************/
+
 #include "countdown.hpp"
 #include <chrono>
 #include <ctime>
 #include <ctype.h>
+#include <fstream>
 #include <iostream> // TODO: REMOVE, only for testing
-#include <ncurses.h>
+#include <map>
+#include <vector>
+
+using json = nlohmann::json;
+
+void to_json(nlohmann ::json &nlohmann_json_j,
+             const struct tm &nlohmann_json_t) {
+  struct tm nonConstTimeStruct = nlohmann_json_t;
+  nlohmann_json_j = Countdown::time2string(nonConstTimeStruct);
+}
+void from_json(const nlohmann ::json &nlohmann_json_j,
+               struct tm &nlohmann_json_t) {
+  std::string timeString = nlohmann_json_j.template get<std::string>();
+  nlohmann_json_t = Countdown::string2time(timeString);
+}
 
 namespace Countdown {
 
@@ -59,8 +79,8 @@ struct tm getRepeat(const event &eventToRepeat) {
                          month,
                          year};
     mktime(&newTime);
-    return getNthWeekdayAfterDate(newTime, eventToRepeat.time.tm_wday,
-                                  currentWeekdayNum);
+    return getNthWeekdayFromDate(newTime, eventToRepeat.time.tm_wday,
+                                 currentWeekdayNum);
   } else {
     struct tm newTime = eventToRepeat.time;
     int i = 0;
@@ -92,7 +112,7 @@ struct tm getRepeat(const event &eventToRepeat) {
       mktime(&newTime);
       return newTime;
     case 'W':
-      newTime.tm_yday += 7*repeatNum;
+      newTime.tm_yday += 7 * repeatNum;
       mktime(&newTime);
       return newTime;
     case 'M':
@@ -104,25 +124,85 @@ struct tm getRepeat(const event &eventToRepeat) {
       mktime(&newTime);
       return newTime;
     default:
-      throw std::invalid_argument(&"Invalid unit" [ eventToRepeat.repeat[i]]);
+      throw std::invalid_argument(&"Invalid unit"[eventToRepeat.repeat[i]]);
     };
   }
 }
 
-std::string time2string(const struct tm &timeStruct);
-struct tm string2time(const std::string &timeString);
-struct tm getNthWeekdayAfterDate(const struct tm &startDate,
-                                 const int &weekdayNum, const int &n);
-int getWeekdayNum(const struct tm &dayToCheck, const bool &ofYear);
+std::string time2string(struct tm &timeStruct) {
+  char buffer[20]; // in theory exactly enough for a null-terminated string of
+                   // yyyy-mm-ddThh:mm:ss
+  strftime(buffer, 100, "%FT%T", &timeStruct);
+  return std::string(buffer);
+}
+
+struct tm string2time(const std::string &timeString) {
+  char timeCharArr[20];
+  strcpy(timeCharArr, timeString.c_str());
+
+  struct tm timeStruct;
+  strptime(timeCharArr, "%FT%T", &timeStruct);
+  time_t timeT = mktime(&timeStruct);
+  return *gmtime(&timeT);
+}
+
+struct tm getNthWeekdayFromDate(const struct tm &startDate,
+                                const int &weekdayNum, const int &n) {
+  int startWeekday = startDate.tm_wday;
+  int daysUntilFirstMatch = (weekdayNum - startWeekday + 7) % 7;
+
+  struct tm newTime = startDate;
+  newTime.tm_yday += daysUntilFirstMatch + ((n - 1) * 7);
+  mktime(&newTime);
+  return newTime;
+}
+
+int getWeekdayNum(const struct tm &dayToCheck, const bool &ofYear) {
+  // This took me forever to figure out.
+  if (ofYear)
+    return (dayToCheck.tm_yday + (7 - dayToCheck.tm_wday)) / 7;
+  return (dayToCheck.tm_mday + (7 - dayToCheck.tm_wday)) / 7;
+}
+
+event CountdownData::getEvent(int index) const {
+  return data["events"].at(index);
+}
+void CountdownData::addEvent(event eventToAdd) {
+  data["events"].push_back(eventToAdd);
+}
+void CountdownData::setEvent(int index, event eventToSet) {
+  data["events"][index] = eventToSet;
+}
+bool CountdownData::loadData() {
+  std::ifstream jsonFile(filename);
+  data = json::parse(jsonFile);
+  return true;
+}
+void CountdownData::saveData() const {
+  std::ofstream jsonFile(filename);
+  jsonFile << std::setw(4) << data << std::endl;
+}
 
 } // namespace Countdown
 
 int main() {
   // Setup ncurses
-  initscr();
-  cbreak();
-  noecho();
-  keypad(stdscr, TRUE);
+  /*initscr();*/
+  /*cbreak();*/
+  /*noecho();*/
+  /*keypad(stdscr, TRUE);*/
+
+  Countdown::CountdownData countdown("data.json");
+  countdown.loadData();
+  struct tm repeat = Countdown::getRepeat(countdown.getEvent(0));
+  time_t now = time(0);
+  struct tm localTime = *localtime(&now);
+  struct tm gmTime = *gmtime(&now);
+  std::cout << asctime(&repeat);
+  std::cout << "Local Time: " << asctime(&localTime);
+  std::cout << "GMT Time: " << asctime(&gmTime);
+  std::cout << "Time Zone: " << localTime.tm_zone << "\n";
+  std::cout << "DST: " << (localTime.tm_isdst > 0 ? "Yes" : "No") << "\n";
 
   return 0;
 }
