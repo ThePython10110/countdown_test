@@ -4,15 +4,15 @@
  *******************************************************************************/
 
 #include "countdown.hpp"
-#include <chrono>
 #include <ctime>
-#include <ctype.h>
+#include <filesystem>
 #include <fstream>
 #include <iostream> // TODO: REMOVE, only for testing
-#include <map>
-#include <vector>
+#include <nlohmann/json.hpp>
+#include <string>
 
 using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 void to_json(nlohmann ::json &nlohmann_json_j,
              const struct tm &nlohmann_json_t) {
@@ -25,7 +25,27 @@ void from_json(const nlohmann ::json &nlohmann_json_j,
   nlohmann_json_t = Countdown::string2time(timeString);
 }
 
+bool operator<(const struct tm &lhs, const struct tm &rhs) {
+  struct tm nonConstLhs = lhs;
+  struct tm nonConstRhs = rhs;
+  return mktime(&nonConstLhs) < mktime(&nonConstRhs);
+}
+bool operator>(const struct tm &lhs, const struct tm &rhs) { return rhs < lhs; }
+bool operator>=(const struct tm &lhs, const struct tm &rhs) {
+  return !(lhs < rhs);
+}
+bool operator<=(const struct tm &lhs, const struct tm &rhs) {
+  return !(rhs < lhs);
+}
+
 namespace Countdown {
+
+bool operator<(const event &lhs, const event &rhs) {
+  return lhs.time < rhs.time;
+}
+bool operator>(const event &lhs, const event &rhs) { return rhs < lhs; }
+bool operator>=(const event &lhs, const event &rhs) { return !(lhs < rhs); }
+bool operator<=(const event &lhs, const event &rhs) { return !(rhs < lhs); }
 
 bool hasHappened(struct tm *eventToCheck) {
   return mktime(eventToCheck) < std::time(0);
@@ -33,6 +53,70 @@ bool hasHappened(struct tm *eventToCheck) {
 
 bool hasHappened(event *eventToCheck) {
   return hasHappened(&(eventToCheck->time));
+}
+
+std::string getCountdownString(const std::string &title,
+                               const struct tm &eventTime) {
+  std::string result = title;
+  result += " is in ";
+
+  struct tm gmEventTime = eventTime;
+  time_t eventTimestamp = timegm(&gmEventTime);
+  gmEventTime = *gmtime(&eventTimestamp);
+  time_t nowTimestamp = time(nullptr);
+  struct tm gmNowTime = *gmtime(&nowTimestamp);
+
+  int yearDifference = gmEventTime.tm_year - gmNowTime.tm_year;
+  int dayDifference = gmEventTime.tm_yday - gmNowTime.tm_yday;
+
+  bool addCommas = false;
+
+  if (yearDifference > 0 && dayDifference >= 0) {
+    result += std::to_string(yearDifference);
+    result += " year";
+    if (yearDifference != 1)
+      result += 's';
+    addCommas = true;
+  }
+
+  if (dayDifference > 0) {
+    if (addCommas)
+      result += ", ";
+    result += std::to_string(dayDifference);
+    result += " day";
+    if (dayDifference != 1)
+      result += 's';
+    addCommas = true;
+  }
+
+  time_t timeWithoutDays = (eventTimestamp - nowTimestamp) % (60 * 60 * 24);
+  if (timeWithoutDays > 0) {
+    int seconds = timeWithoutDays % 60;
+    int minutes = (timeWithoutDays % 3600) / 60;
+
+    int hours = (timeWithoutDays / 3600);
+    if (addCommas)
+      result += ',';
+    result += ' ';
+    result += zeroPad(std::to_string(hours));
+    result += ':';
+    result += zeroPad(std::to_string(minutes));
+    result += ':';
+    result += zeroPad(std::to_string(seconds));
+  }
+  return result;
+}
+
+std::string getCountdownString(const event &e) {
+  return getCountdownString(e.title, e.time);
+}
+
+std::string zeroPad(const std::string &str, int length) {
+  std::string result = str;
+  int zeroes = length - result.length();
+  if (zeroes > 0)
+    result.insert(0, zeroes, '0');
+  return result;
 }
 
 // Will crash if given an event without a repeat
@@ -108,7 +192,7 @@ struct tm getRepeat(const event &eventToRepeat) {
       mktime(&newTime);
       return newTime;
     case 'D':
-      newTime.tm_yday += repeatNum;
+      newTime.tm_mday += repeatNum;
       mktime(&newTime);
       return newTime;
     case 'W':
@@ -136,14 +220,22 @@ std::string time2string(struct tm &timeStruct) {
   return std::string(buffer);
 }
 
+std::string time2string(const time_t &t) {
+  struct tm annoyingStruct = *gmtime(&t);
+  return time2string(annoyingStruct);
+}
+
 struct tm string2time(const std::string &timeString) {
   char timeCharArr[20];
   strcpy(timeCharArr, timeString.c_str());
 
   struct tm timeStruct;
   strptime(timeCharArr, "%FT%T", &timeStruct);
+  timeStruct.tm_isdst = -1;
   time_t timeT = mktime(&timeStruct);
-  return *gmtime(&timeT);
+
+  timeStruct = *gmtime(&timeT);
+  return timeStruct;
 }
 
 struct tm getNthWeekdayFromDate(const struct tm &startDate,
@@ -165,7 +257,8 @@ int getWeekdayNum(const struct tm &dayToCheck, const bool &ofYear) {
 }
 
 event CountdownData::getEvent(int index) const {
-  return data["events"].at(index);
+  event e = data["events"].at(index);
+  return e;
 }
 void CountdownData::addEvent(event eventToAdd) {
   data["events"].push_back(eventToAdd);
@@ -173,10 +266,21 @@ void CountdownData::addEvent(event eventToAdd) {
 void CountdownData::setEvent(int index, event eventToSet) {
   data["events"][index] = eventToSet;
 }
-bool CountdownData::loadData() {
+void CountdownData::loadData() {
   std::ifstream jsonFile(filename);
   data = json::parse(jsonFile);
-  return true;
+  if (fs::is_directory("themes"))
+    for (const auto &entry : fs::recursive_directory_iterator("themes")) {
+      fs::path themeFilename = entry.path();
+      if (themeFilename.extension() == ".json") {
+        std::cout << themeFilename.stem().string() << std::endl;
+        if (json::accept(std::ifstream(themeFilename)))
+          themes[themeFilename.stem()] =
+              json::parse(std::ifstream(themeFilename));
+        else
+         std::cout << "Invalid JSON: " << themeFilename << std::endl;
+      }
+    }
 }
 void CountdownData::saveData() const {
   std::ofstream jsonFile(filename);
@@ -193,16 +297,9 @@ int main() {
   /*keypad(stdscr, TRUE);*/
 
   Countdown::CountdownData countdown("data.json");
-  countdown.loadData();
-  struct tm repeat = Countdown::getRepeat(countdown.getEvent(0));
-  time_t now = time(0);
-  struct tm localTime = *localtime(&now);
-  struct tm gmTime = *gmtime(&now);
-  std::cout << asctime(&repeat);
-  std::cout << "Local Time: " << asctime(&localTime);
-  std::cout << "GMT Time: " << asctime(&gmTime);
-  std::cout << "Time Zone: " << localTime.tm_zone << "\n";
-  std::cout << "DST: " << (localTime.tm_isdst > 0 ? "Yes" : "No") << "\n";
+  // struct tm repeat = Countdown::getRepeat(countdown.getEvent(0));
+  std::cout << Countdown::getCountdownString(countdown.getEvent(0))
+            << std::endl;
 
   return 0;
 }
