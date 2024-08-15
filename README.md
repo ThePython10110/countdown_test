@@ -26,13 +26,16 @@ I will hopefully be able to implement all of these...
 
 ```json
 {
-    "theme": "default",
-    "events": [
-        "title": "Christmas",
-        "time": "2024-12-25T00:00:00",
-        "repeat": "Y",
-    ]
+  "theme": "default",
+  "events": [
+    {
+      "title": "Christmas",
+      "time": "2024-12-25T00:00:00",
+      "repeat": "Y"
+    }
+  ]
 }
+
 ```
 
 ## Repeats
@@ -69,10 +72,8 @@ This is the basic format of a theme:
 
 ```json
 {
-    "global": {
-        "bg": "transparent",
-        "fg": "#ffffff"
-    },
+    "bg": "transparent",
+    "fg": "#ffffff"
     "events": [
             {
                 "time": "1D",
