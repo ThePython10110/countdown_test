@@ -1,7 +1,7 @@
-/*******************************************************************************
+/******************************************************************************
  * countdown.cpp
  * The main code
- *******************************************************************************/
+ ******************************************************************************/
 
 #include "countdown.hpp"
 #include <ctime>
@@ -14,15 +14,13 @@
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
-void to_json(nlohmann ::json &nlohmann_json_j,
-             const struct tm &nlohmann_json_t) {
-  struct tm nonConstTimeStruct = nlohmann_json_t;
-  nlohmann_json_j = Countdown::time2string(nonConstTimeStruct);
+void to_json(json &j, const struct tm &t) {
+  struct tm nonConstTimeStruct = t;
+  j = Countdown::time2string(nonConstTimeStruct);
 }
-void from_json(const nlohmann ::json &nlohmann_json_j,
-               struct tm &nlohmann_json_t) {
-  std::string timeString = nlohmann_json_j.template get<std::string>();
-  nlohmann_json_t = Countdown::string2time(timeString);
+void from_json(const json &j, struct tm &t) {
+  std::string timeString = j.template get<std::string>();
+  t = Countdown::string2time(timeString);
 }
 
 bool operator<(const struct tm &lhs, const struct tm &rhs) {
@@ -39,6 +37,48 @@ bool operator<=(const struct tm &lhs, const struct tm &rhs) {
 }
 
 namespace Countdown {
+
+void to_json(json &j, const event &e) {
+  j["title"] = e.title;
+  j["time"] = e.time;
+  if (e.details != "")
+    j["details"] = e.details;
+  if (e.repeat != "")
+    j["repeat"] = e.repeat;
+  if (e.theme != "")
+    j["theme"] = e.theme;
+}
+void from_json(const json &j, event &e) {
+  j.at("title").get_to(e.title);
+  j.at("time").get_to(e.time);
+  if (j.contains("details"))
+    j.at("details").get_to(e.details);
+  else
+    e.details = "";
+  if (j.contains("repeat"))
+    j.at("repeat").get_to(e.repeat);
+  else
+    e.repeat = "";
+  if (j.contains("theme"))
+    j.at("theme").get_to(e.theme);
+  else
+    e.theme = "";
+}
+
+void to_json(json &j, const theme &t) {
+  j["bg"] = t.bg;
+  j["fg"] = t.fg;
+  if (!t.events.empty())
+    j["events"] = t.events;
+}
+void from_json(const json &j, theme &t) {
+  j.at("bg").get_to(t.bg);
+  j.at("fg").get_to(t.fg);
+  if (j.contains("events"))
+    j.at("events").get_to(t.events);
+  else
+   t.events = {};
+}
 
 bool operator<(const event &lhs, const event &rhs) {
   return lhs.time < rhs.time;
@@ -262,30 +302,39 @@ event CountdownData::getEvent(int index) const {
 }
 void CountdownData::addEvent(event eventToAdd) {
   data["events"].push_back(eventToAdd);
+  sortEvents();
 }
 void CountdownData::setEvent(int index, event eventToSet) {
   data["events"][index] = eventToSet;
 }
+void CountdownData::sortEvents() {
+  sort(data["events"].begin(), data["events"].end());
+}
+
 void CountdownData::loadData() {
   std::ifstream jsonFile(filename);
-  data = json::parse(jsonFile);
+  data = json::parse(jsonFile); // Will crash on error
   if (fs::is_directory("themes"))
     for (const auto &entry : fs::recursive_directory_iterator("themes")) {
       fs::path themeFilename = entry.path();
       if (themeFilename.extension() == ".json") {
-        std::cout << themeFilename.stem().string() << std::endl;
-        if (json::accept(std::ifstream(themeFilename)))
-          themes[themeFilename.stem()] =
-              json::parse(std::ifstream(themeFilename));
+        std::ifstream themeFile(themeFilename);
+        if (json::accept(themeFile))
+          themes[themeFilename.stem()] = json::parse(themeFile);
         else
-         std::cout << "Invalid JSON: " << themeFilename << std::endl;
+          std::cerr << "Invalid JSON: " << themeFilename << std::endl;
       }
     }
+  else
+    themes["default"] = DEFAULT_THEME;
 }
+
 void CountdownData::saveData() const {
   std::ofstream jsonFile(filename);
   jsonFile << std::setw(4) << data << std::endl;
 }
+std::pair<std::string, std::string>
+CountdownData::getTheme(const event &e) const {}
 
 } // namespace Countdown
 
@@ -300,6 +349,7 @@ int main() {
   // struct tm repeat = Countdown::getRepeat(countdown.getEvent(0));
   std::cout << Countdown::getCountdownString(countdown.getEvent(0))
             << std::endl;
+  countdown.saveData();
 
   return 0;
 }

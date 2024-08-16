@@ -1,0 +1,11 @@
+{
+  "$schema": "../theme_schema.json",
+  "bg": "#1f2329",
+  "fg": "#a0a8b7",
+  "events": [
+    {
+      "time": "D",
+      "fg": "#e55561"
+    }
+  ]
+}
