@@ -2,12 +2,9 @@
   "$schema": "countdown_schema.json",
   "events": [
     {
-      "details": "",
       "repeat": "Y",
-      "theme": "",
       "time": "2025-12-25T00:00:00",
       "title": "Christmas"
     }
-  ],
-  "theme": "default"
+  ]
 }

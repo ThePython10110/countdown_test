@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/styles"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "events": {
+          "description": "A list of time-specific style overrides",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "unevaluatedProperties": false,
+            "allOf": [
+              {
+                "$ref": "#/$defs/styles"
+              },
+              {
+                "properties": {
+                  "time": {
+                    "type": "string",
+                    "pattern": "\\d*[smhDWMY]",
+                    "description": "The time ([#]u) where this override should apply"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "color": {
+      "type": "string",
+      "pattern": "#[0-9a-f]{6}"
+    },
+    "styles": {
+      "type": "object",
+      "properties": {
+        "bg": {
+          "$ref": "#/$defs/color",
+          "description": "The global background color"
+        },
+        "fg": {
+          "$ref": "#/$defs/color",
+          "description": "The global foreground color"
+        }
+      }
+    }
+  }
+}

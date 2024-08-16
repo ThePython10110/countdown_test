@@ -6,8 +6,7 @@
       "type": "string"
     },
     "theme": {
-      "type": "string",
-      "description": "The name of the global theme"
+      "$ref": "#/$defs/theme"
     },
     "events": {
       "type": "array",
@@ -20,8 +19,7 @@
             "description": "The title of the event"
           },
           "theme": {
-            "type": "string",
-            "description": "The name of the event's theme"
+            "$ref": "#/$defs/theme"
           },
           "details": {
             "type": "string",
@@ -38,46 +36,25 @@
             "pattern": "(^\\d*[smhDWMY]$)|(^W[MY]\\d*[MY]?$)"
           }
         },
-        "required": [
-          "title",
-          "time"
-        ],
-        "if": {
-          "type": "object",
-          "properties": {
-            "theme": {
-              "const": "lambda"
-            }
-          }
-        },
-        "then": {
-          "properties": {
-            "lambdaTheme": {
-              "$ref": "theme_schema.json"
-            }
-          }
-        },
+        "required": ["title", "time"],
         "unevaluatedProperties": false
       }
     },
-    "required": [
-      "events"
-    ]
+    "required": ["events"]
   },
-  "if": {
-    "type": "object",
-    "properties": {
-      "theme": {
-        "const": "lambda"
-      }
+  "unevaluatedProperties": false,
+  "$defs": {
+    "theme": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "The name of the global theme"
+        },
+        {
+          "$ref": "theme_schema.json",
+          "description": "A theme object"
+        }
+      ]
     }
-  },
-  "then": {
-    "properties": {
-      "lambdaTheme": {
-        "$ref": "theme_schema.json"
-      }
-    }
-  },
-  "unevaluatedProperties": false
+  }
 }
