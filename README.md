@@ -122,25 +122,4 @@ events that are <= 3 days away are white on black. Of course, this theme would
 also be overridden by any event-specific themes...
 
 More than `fg` and `bg` may eventually be added (such as `font` for GUI
-versions, if I ever make GUI versions). There is also a `format` property that
-can do things basically like `strftime` but with more features, and it has its
-own section because it's complicated.
-
-### The `format` property
-Basically, this is a string representing how an event will be printed. It is
-"backwards-compatible" with `strftime`, where the time is the event's date/time.
-Replacing `%` with `@` uses the current date/time instead. Use `~` instead of
-`%` or `!` to use the time difference.
-
-Unfortunately, `~` format specifiers are entirely custom, which is annoying.
-
-- `~~` represents a literal tilde.
-- `~u` represents the total number of `u`'s (like the first repeat format) until
-the event. `~s` is the total number of seconds until the event.
-- `~uu` represents the number of `u`'s minus the `u`'s. That's confusing and I  
-don't care. `~sM` is the total number of seconds until the event, if you ignore
-months (0-2678400). `~sm` is the same, but with minutes (0-59).
-- `~#u` or `~#uu` is the same as `~u` or `~uu`, but padded with zeros to be `#`
-characters long.
-- `~t` represents the title of the event, since I couldn't think of anything
-better.
+versions, if I ever make GUI versions).

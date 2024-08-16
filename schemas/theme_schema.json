@@ -52,10 +52,6 @@
         "fg": {
           "$ref": "#/$defs/color",
           "description": "Foreground color"
-        },
-        "format": {
-          "type": "string",
-          "description": "The format of events. See the README for details."
         }
       }
     }
