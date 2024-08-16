@@ -1,7 +1,8 @@
 {
-  "$schema": "../theme_schema.json",
+  "$schema": "https://raw.githubusercontent.com/ThePython10110/countdown_test/master/schemas/theme_schema.json",
   "bg": "#1f2329",
   "fg": "#a0a8b7",
+  "format": "",
   "events": [
     {
       "time": "D",

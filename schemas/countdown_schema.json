@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ThePython10110/countdown_test/master/schemas/countdown_schema.json",
   "type": "object",
   "properties": {
     "$schema": {

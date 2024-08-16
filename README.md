@@ -45,9 +45,11 @@ I will hopefully be able to implement all of these...
   ]
 }
 ```
+`"theme"` can either be the name (without the extension) of a JSON file in the
+`themes` directory, or a theme JSON object.
 
-`"theme"` in both cases can be set to `"lambda"`, in which case a JSON theme > [!CAUTION]
-be directly included in the `"lambdaTheme"` property.
+For more information about the JSON format, check the schemas in the `schemas`
+directory.
 
 ## Repeats
 
@@ -56,7 +58,7 @@ value can be stored in two different ways:
 
 - `"[#]u"`
   This is the simplest method. `[#]` is an optional number that defaults to 1 if
-  omitted. `u` is a unit, either `s|m|h|D|W|M|Y`. After the event happens, this
+  omitted. `u` is a unit, either `s|m|h|D|W|M|Y|C`. After the event happens, this
   amount is added to it. For example, `"Y"` would schedule an event as yearly,
   and `"5D"` would schedule an event to be every five days.
 - `"Wu[#][u]"`
@@ -120,6 +122,25 @@ events that are <= 3 days away are white on black. Of course, this theme would
 also be overridden by any event-specific themes...
 
 More than `fg` and `bg` may eventually be added (such as `font` for GUI
-versions, if I ever make GUI versions). I would also like to add a `format`
-field where you could actually choose how the events are formatted, but I
-couldn't think of a good way to do that.
+versions, if I ever make GUI versions). There is also a `format` property that
+can do things basically like `strftime` but with more features, and it has its
+own section because it's complicated.
+
+### The `format` property
+Basically, this is a string representing how an event will be printed. It is
+"backwards-compatible" with `strftime`, where the time is the event's date/time.
+Replacing `%` with `@` uses the current date/time instead. Use `~` instead of
+`%` or `!` to use the time difference.
+
+Unfortunately, `~` format specifiers are entirely custom, which is annoying.
+
+- `~~` represents a literal tilde.
+- `~u` represents the total number of `u`'s (like the first repeat format) until
+the event. `~s` is the total number of seconds until the event.
+- `~uu` represents the number of `u`'s minus the `u`'s. That's confusing and I  
+don't care. `~sM` is the total number of seconds until the event, if you ignore
+months (0-2678400). `~sm` is the same, but with minutes (0-59).
+- `~#u` or `~#uu` is the same as `~u` or `~uu`, but padded with zeros to be `#`
+characters long.
+- `~t` represents the title of the event, since I couldn't think of anything
+better.

@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ThePython10110/countdown_test/master/schemas/theme_schema.json",
   "allOf": [
     {
       "$ref": "#/$defs/styles"
@@ -24,7 +25,7 @@
                 "properties": {
                   "time": {
                     "type": "string",
-                    "pattern": "\\d*[smhDWMY]",
+                    "pattern": "\\d*[smhDWMYC]",
                     "description": "The time ([#]u) where this override should apply"
                   }
                 }
@@ -46,11 +47,15 @@
       "properties": {
         "bg": {
           "$ref": "#/$defs/color",
-          "description": "The global background color"
+          "description": "Background color"
         },
         "fg": {
           "$ref": "#/$defs/color",
-          "description": "The global foreground color"
+          "description": "Foreground color"
+        },
+        "format": {
+          "type": "string",
+          "description": "The format of events. See the README for details."
         }
       }
     }

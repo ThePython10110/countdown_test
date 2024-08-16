@@ -1,10 +1,12 @@
 {
-  "$schema": "countdown_schema.json",
+  "$schema": "https://raw.githubusercontent.com/ThePython10110/countdown_test/master/schemas/countdown_schema.json",
   "events": [
     {
       "repeat": "Y",
       "time": "2025-12-25T00:00:00",
       "title": "Christmas"
     }
-  ]
+  ],
+  "theme": {
+  }
 }
